@@ -59,6 +59,26 @@
                 </div>
               </div>
 
+              <div class="inputContainer">
+                <label class="inputLabel inputLabelUnfocused" for="Country"
+                  >Country</label
+                >
+                <input
+                  id="Country"
+                  name="Country"
+                  type="text"
+                  is="emby-input"
+                  maxlength="2"
+                  autocomplete="off"
+                  placeholder="US"
+                  required
+                />
+                <div class="fieldDescription">
+                  Enter a 2-letter ISO country code (for example: US, GB, CA).
+                  Provider matches will only be shown for this country.
+                </div>
+              </div>
+
               <div class="verticalSection">
                 <h2 class="sectionTitle">Streaming Services</h2>
                 <div
@@ -221,6 +241,9 @@
               .then(function (config) {
                 page.querySelector("#TmdbApiKey").value =
                   config.TmdbApiKey || "";
+                page.querySelector("#Country").value = (
+                  config.Country || ""
+                ).toUpperCase();
                 setCheckedValues(
                   "providerOption",
                   config.SelectedProviders || [],
@@ -247,6 +270,10 @@
                   config.TmdbApiKey = page
                     .querySelector("#TmdbApiKey")
                     .value.trim();
+                  config.Country = page
+                    .querySelector("#Country")
+                    .value.trim()
+                    .toUpperCase();
                   config.SelectedProviders = getCheckedValues("providerOption");
                   config.MonitoredLibraryIds =
                     getCheckedValues("libraryOption");

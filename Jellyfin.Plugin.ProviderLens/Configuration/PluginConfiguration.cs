@@ -15,6 +15,7 @@ public class PluginConfiguration : BasePluginConfiguration
     public PluginConfiguration()
     {
         TmdbApiKey = string.Empty;
+        Country = string.Empty;
         SelectedProviders = new Collection<string>();
         MonitoredLibraryIds = new Collection<string>();
     }
@@ -23,6 +24,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the TMDB API key.
     /// </summary>
     public string TmdbApiKey { get; set; }
+
+    /// <summary>
+    /// Gets or sets the 2-letter ISO country code used to filter TMDB provider results.
+    /// </summary>
+    public string Country { get; set; }
 
     /// <summary>
     /// Gets or sets the selected streaming provider ids.
