@@ -38,14 +38,20 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 
     /// <inheritdoc />
     public IEnumerable<PluginPageInfo> GetPages()
-    {
-        return
-        [
-            new PluginPageInfo
-            {
-                Name = Name,
-                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.configPage.html", GetType().Namespace)
-            }
-        ];
-    }
+{
+    return
+    [
+        new PluginPageInfo
+        {
+            Name = Name,
+            DisplayName = "Provider Lens",
+            EnableInMainMenu = true,
+            MenuIcon = "visibility",
+            EmbeddedResourcePath = string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}.Configuration.configPage.html",
+                GetType().Namespace)
+        }
+    ];
+}
 }
