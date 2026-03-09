@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.ProviderLens.Configuration;
@@ -24,12 +25,14 @@ public class PluginConfiguration : BasePluginConfiguration
     public string TmdbApiKey { get; set; }
 
     /// <summary>
-    /// Gets the selected streaming provider ids.
+    /// Gets or sets the selected streaming provider ids.
     /// </summary>
-    public Collection<string> SelectedProviders { get; }
+    [SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "Must be settable for plugin configuration deserialization.")]
+    public Collection<string> SelectedProviders { get; set; }
 
     /// <summary>
-    /// Gets the Jellyfin library ids to monitor.
+    /// Gets or sets the Jellyfin library ids to monitor.
     /// </summary>
-    public Collection<string> MonitoredLibraryIds { get; }
+    [SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "Must be settable for plugin configuration deserialization.")]
+    public Collection<string> MonitoredLibraryIds { get; set; }
 }
