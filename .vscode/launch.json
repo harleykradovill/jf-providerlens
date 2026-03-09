@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Build Jellyfin Plugin",
+      "type": "node",
+      "request": "launch",
+      "preLaunchTask": "Build ProviderLens",
+      "program": "dotnet",
+      "args": [
+        "build",
+        "Jellyfin.Plugin.ProviderLens.sln",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    }
+  ]
+}
