@@ -11,7 +11,7 @@ namespace Jellyfin.Plugin.ProviderLens.ScheduledTasks;
 /// <summary>
 /// Scheduled task that runs ProviderLens provider matching.
 /// </summary>
-internal sealed class ProviderLensSyncTask : IScheduledTask
+public class ProviderLensSyncTask : IScheduledTask
 {
     private readonly IProviderLensScanService _scanService;
     private readonly ILogger<ProviderLensSyncTask> _logger;

@@ -7,7 +7,7 @@ namespace Jellyfin.Plugin.ProviderLens.Services;
 /// <summary>
 /// Scans monitored libraries and finds items available on selected providers.
 /// </summary>
-internal interface IProviderLensScanService
+public interface IProviderLensScanService
 {
     /// <summary>
     /// Runs a provider scan using current plugin settings.

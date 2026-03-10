@@ -81,7 +81,7 @@ internal sealed class ProviderLensScanService : IProviderLensScanService
                 IncludeItemTypes = [BaseItemKind.Movie, BaseItemKind.Series]
             };
 
-            var items = _libraryManager.GetItemList(query);
+            var items = _libraryManager.QueryItems(query).Items;
             foreach (var item in items)
             {
                 cancellationToken.ThrowIfCancellationRequested();
