@@ -47,8 +47,7 @@ internal sealed class ProviderLensScanService : IProviderLensScanService
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ProviderLensMatch>> ScanAsync(CancellationToken cancellationToken)
-    {
+    public async Task<IReadOnlyList<ProviderLensMatch>> ScanAsync(CancellationToken cancellationToken) {
         var config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
         var selectedProviders = new HashSet<string>(
             config.SelectedProviders ?? new Collection<string>(),
@@ -71,18 +70,17 @@ internal sealed class ProviderLensScanService : IProviderLensScanService
         {
             if (!Guid.TryParse(libraryIdText, out var libraryId))
             {
+                _logger.LogWarning("ProviderLens ignored invalid library id '{LibraryIdText}'.", libraryIdText);
                 continue;
             }
 
             var query = new InternalItemsQuery
             {
-                ParentId = libraryId,
-                Recursive = true,
+                AncestorIds = [libraryId],
                 IncludeItemTypes = [BaseItemKind.Movie, BaseItemKind.Series]
             };
 
-            var items = _libraryManager.QueryItems(query).Items;
-            foreach (var item in items)
+            foreach (var item in _libraryManager.QueryItems(query).Items)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -107,18 +105,15 @@ internal sealed class ProviderLensScanService : IProviderLensScanService
                     continue;
                 }
 
-                var matchedProviderIds = providers.Keys
+                var matchedProviders = providers.Keys
                     .Where(selectedProviders.Contains)
+                    .Select(id => new ProviderLensProviderMatch(id, providers[id]))
                     .ToArray();
 
-                if (matchedProviderIds.Length == 0)
+                if (matchedProviders.Length == 0)
                 {
                     continue;
                 }
-
-                var matchedProviders = matchedProviderIds
-                    .Select(id => new ProviderLensProviderMatch(id, providers[id]))
-                    .ToArray();
 
                 matches.Add(new ProviderLensMatch(
                     item.Id.ToString("N", CultureInfo.InvariantCulture),
