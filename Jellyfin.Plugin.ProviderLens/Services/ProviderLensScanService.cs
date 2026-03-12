@@ -47,7 +47,10 @@ internal sealed class ProviderLensScanService : IProviderLensScanService
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ProviderLensMatch>> ScanAsync(CancellationToken cancellationToken) {
+    public async Task<IReadOnlyList<ProviderLensMatch>> ScanAsync(
+    CancellationToken cancellationToken,
+    IProgress<double>? progress = null)
+    {
         var config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
         var selectedProviders = new HashSet<string>(
             config.SelectedProviders ?? new Collection<string>(),
@@ -59,6 +62,7 @@ internal sealed class ProviderLensScanService : IProviderLensScanService
             config.MonitoredLibraryIds.Count == 0)
         {
             _logger.LogInformation("ProviderLens scan skipped due to incomplete configuration.");
+            progress?.Report(100);
             return Array.Empty<ProviderLensMatch>();
         }
 
@@ -66,6 +70,7 @@ internal sealed class ProviderLensScanService : IProviderLensScanService
         var country = config.Country.Trim().ToUpperInvariant();
         var apiKey = config.TmdbApiKey.Trim();
 
+        var scanItems = new List<BaseItem>();
         foreach (var libraryIdText in config.MonitoredLibraryIds)
         {
             if (!Guid.TryParse(libraryIdText, out var libraryId))
@@ -80,10 +85,46 @@ internal sealed class ProviderLensScanService : IProviderLensScanService
                 IncludeItemTypes = [BaseItemKind.Movie, BaseItemKind.Series]
             };
 
-            foreach (var item in _libraryManager.QueryItems(query).Items)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
+            scanItems.AddRange(_libraryManager.QueryItems(query).Items);
+        }
 
+        var totalItems = scanItems.Count;
+        var processedItems = 0;
+        var lastReportedPercent = -1;
+
+        void ReportProgress()
+        {
+            if (progress is null)
+            {
+                return;
+            }
+
+            var percent = totalItems == 0
+                ? 100
+                : (int)Math.Floor((processedItems * 100d) / totalItems);
+
+            if (percent > 99 && processedItems < totalItems)
+            {
+                percent = 99;
+            }
+
+            if (percent == lastReportedPercent)
+            {
+                return;
+            }
+
+            lastReportedPercent = percent;
+            progress.Report(percent);
+        }
+
+        ReportProgress();
+
+        foreach (var item in scanItems)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
                 if (item is not Movie && item is not Series)
                 {
                     continue;
@@ -122,10 +163,17 @@ internal sealed class ProviderLensScanService : IProviderLensScanService
                     country,
                     matchedProviders));
             }
+            finally
+            {
+                processedItems++;
+                ReportProgress();
+            }
         }
 
         await _resultStore.SaveAsync(matches, cancellationToken).ConfigureAwait(false);
         _logger.LogInformation("ProviderLens scan completed with {MatchCount} matches.", matches.Count);
+
+        progress?.Report(100);
         return matches;
     }
 }

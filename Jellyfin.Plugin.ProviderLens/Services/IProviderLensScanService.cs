@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +14,9 @@ public interface IProviderLensScanService
     /// Runs a provider scan using current plugin settings.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="progress">Optional task progress reporter.</param>
     /// <returns>Matched items and providers.</returns>
-    Task<IReadOnlyList<ProviderLensMatch>> ScanAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<ProviderLensMatch>> ScanAsync(
+    CancellationToken cancellationToken,
+    IProgress<double>? progress = null);
 }

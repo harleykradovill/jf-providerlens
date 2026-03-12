@@ -44,12 +44,8 @@ public class ProviderLensSyncTask : IScheduledTask
     /// <inheritdoc />
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
-        progress.Report(0);
-
-        var matches = await _scanService.ScanAsync(cancellationToken).ConfigureAwait(false);
-
+        var matches = await _scanService.ScanAsync(cancellationToken, progress).ConfigureAwait(false);
         _logger.LogInformation("ProviderLens sync task finished with {MatchCount} matches.", matches.Count);
-        progress.Report(100);
     }
 
     /// <inheritdoc />
