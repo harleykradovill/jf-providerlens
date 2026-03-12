@@ -21,7 +21,7 @@
                 class="emby-tab-button"
                 data-index="0"
               >
-                <div class="emby-button-foreground">Settings</div>
+                <div class="emby-button-foreground">Dashboard</div>
               </button>
               <button
                 type="button"
@@ -29,12 +29,21 @@
                 class="emby-tab-button"
                 data-index="1"
               >
-                <div class="emby-button-foreground">Dashboard</div>
+                <div class="emby-button-foreground">Settings</div>
               </button>
             </div>
           </div>
 
-          <div class="tabContent pageTabContent is-active" data-index="0">
+          <div class="tabContent pageTabContent" data-index="0">
+            <div class="verticalSection">
+              <h2 class="sectionTitle">Dashboard</h2>
+              <div class="fieldDescription">
+                Dashboard is not implemented yet.
+              </div>
+            </div>
+          </div>
+
+          <div class="tabContent pageTabContent is-active" data-index="1">
             <form id="ProviderLensConfigForm">
               <div class="inputContainer">
                 <label class="inputLabel inputLabelUnfocused" for="TmdbApiKey"
@@ -135,15 +144,6 @@
               </div>
             </form>
           </div>
-
-          <div class="tabContent pageTabContent" data-index="1">
-            <div class="verticalSection">
-              <h2 class="sectionTitle">Dashboard</h2>
-              <div class="fieldDescription">
-                Dashboard is not implemented yet.
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -230,8 +230,41 @@
               });
           }
 
+          function parseTabIndex(value) {
+            var index = parseInt(value, 10);
+            return Number.isNaN(index) ? 0 : index;
+          }
+
+          function selectTab(index, updateControl) {
+            setActiveTab(index);
+
+            if (updateControl) {
+              if (typeof tabs.selectedIndex === "function") {
+                tabs.selectedIndex(index, false);
+              } else if ("selectedIndex" in tabs) {
+                tabs.selectedIndex = index;
+              }
+            }
+          }
+
+          tabs.addEventListener("click", function (e) {
+            var button = e.target.closest(".emby-tab-button");
+            if (!button) {
+              return;
+            }
+
+            selectTab(parseTabIndex(button.getAttribute("data-index")), true);
+          });
+
           tabs.addEventListener("tabchange", function (e) {
-            setActiveTab(parseInt(e.detail.selectedTabIndex, 10));
+            var detail = e && e.detail ? e.detail : {};
+            var index = Number.isInteger(detail.selectedIndex)
+              ? detail.selectedIndex
+              : Number.isInteger(detail.selectedTabIndex)
+                ? detail.selectedTabIndex
+                : parseTabIndex(detail.index);
+
+            selectTab(index, false);
           });
 
           page.addEventListener("pageshow", function () {
