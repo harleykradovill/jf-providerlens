@@ -1,3 +1,30 @@
+function ensureDashboardStyles() {
+  if (document.getElementById("ProviderLensDashboardStyles")) {
+    return;
+  }
+
+  var style = document.createElement("style");
+  style.id = "ProviderLensDashboardStyles";
+  style.textContent = [
+    "#ProviderLensConfigPage .providerlens-updated{margin-bottom:12px;color:var(--text-muted);font-size:.95rem;}",
+    "#ProviderLensConfigPage .providerlens-library-block{margin:18px 0 26px;border:1px solid rgba(255,255,255,.08);border-radius:8px;overflow:hidden;background:rgba(255,255,255,.02);}",
+    "#ProviderLensConfigPage .providerlens-library-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-weight:600;}",
+    "#ProviderLensConfigPage .providerlens-count{font-size:.85rem;color:var(--text-muted);font-weight:500;}",
+    "#ProviderLensConfigPage .providerlens-table-wrap{overflow-x:auto;}",
+    "#ProviderLensConfigPage .providerlens-table{width:100%;border-collapse:collapse;min-width:520px;table-layout:fixed;}",
+    "#ProviderLensConfigPage .providerlens-col-title{width:46%;}",
+    "#ProviderLensConfigPage .providerlens-col-services{width:54%;}",
+    "#ProviderLensConfigPage .providerlens-table th,#ProviderLensConfigPage .providerlens-table td{padding:10px 12px;text-align:left;vertical-align:top;overflow-wrap:anywhere;}",
+    "#ProviderLensConfigPage .providerlens-table thead th{font-size:.82rem;letter-spacing:.02em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid rgba(255,255,255,.1);}",
+    "#ProviderLensConfigPage .providerlens-table tbody tr:not(:last-child) td{border-bottom:1px solid rgba(255,255,255,.06);}",
+    "#ProviderLensConfigPage .providerlens-title{font-weight:600;}",
+    "#ProviderLensConfigPage .providerlens-chips{display:flex;flex-wrap:wrap;gap:6px;}",
+    "#ProviderLensConfigPage .providerlens-chip{display:inline-block;padding:3px 8px;border-radius:999px;font-size:.8rem;line-height:1.3;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);white-space:nowrap;}",
+  ].join("");
+
+  document.head.appendChild(style);
+}
+
 (function () {
   var ProviderLensConfig = {
     pluginUniqueId: "ba6a4ff6-a27f-46e7-94ab-effb7dc39158",
@@ -5,6 +32,8 @@
 
   var page = document.querySelector("#ProviderLensConfigPage");
   var tabs = page.querySelector('[is="emby-tabs"]');
+
+  ensureDashboardStyles();
 
   function getCheckedValues(name) {
     return Array.from(
@@ -79,8 +108,10 @@
     var updatedUtc =
       snapshot && snapshot.UpdatedUtc ? new Date(snapshot.UpdatedUtc) : null;
     if (updatedUtc && !Number.isNaN(updatedUtc.getTime())) {
+      updatedAt.className = "providerlens-updated";
       updatedAt.textContent = "Last updated: " + updatedUtc.toLocaleString();
     } else {
+      updatedAt.className = "providerlens-updated";
       updatedAt.textContent = "";
     }
 
@@ -111,38 +142,61 @@
         }
 
         var rows = libraryMatches
+          .slice()
+          .sort(function (a, b) {
+            return (a.Name || "").localeCompare(b.Name || "");
+          })
           .map(function (match) {
-            var providers = (match.Providers || [])
+            var providerChips = (match.Providers || [])
               .map(function (provider) {
                 return provider.ProviderName || provider.ProviderId || "";
               })
               .filter(Boolean)
-              .join(", ");
+              .sort(function (a, b) {
+                return a.localeCompare(b);
+              })
+              .map(function (providerName) {
+                return (
+                  '<span class="providerlens-chip">' +
+                  escapeHtml(providerName) +
+                  "</span>"
+                );
+              })
+              .join("");
 
             return (
               "<tr>" +
-              "<td>" +
+              '<td><span class="providerlens-title">' +
               escapeHtml(match.Name || "") +
-              "</td>" +
-              "<td>" +
-              escapeHtml(providers) +
-              "</td>" +
+              "</span></td>" +
+              '<td><div class="providerlens-chips">' +
+              providerChips +
+              "</div></td>" +
               "</tr>"
             );
           })
           .join("");
 
         return (
-          '<div class="verticalSection">' +
-          "<h3>" +
+          '<div class="providerlens-library-block">' +
+          '<div class="providerlens-library-header">' +
+          "<span>" +
           escapeHtml(libraryName) +
-          "</h3>" +
-          '<table class="detailTable">' +
+          "</span>" +
+          '<span class="providerlens-count">' +
+          libraryMatches.length +
+          (libraryMatches.length === 1 ? " match" : " matches") +
+          "</span>" +
+          "</div>" +
+          '<div class="providerlens-table-wrap">' +
+          '<table class="providerlens-table">' +
+          '<colgroup><col class="providerlens-col-title" /><col class="providerlens-col-services" /></colgroup>' +
           "<thead><tr><th>Media Title</th><th>Streaming Services</th></tr></thead>" +
           "<tbody>" +
           rows +
           "</tbody>" +
           "</table>" +
+          "</div>" +
           "</div>"
         );
       })
