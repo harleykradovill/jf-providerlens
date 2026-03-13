@@ -12,20 +12,24 @@ function ensureDashboardStyles() {
     "#ProviderLensConfigPage .providerlens-count{font-size:.85rem;color:var(--text-muted);font-weight:500;}",
     "#ProviderLensConfigPage .providerlens-table-wrap{overflow-x:auto;}",
     "#ProviderLensConfigPage .providerlens-table{width:100%;border-collapse:collapse;min-width:520px;table-layout:fixed;}",
-    "#ProviderLensConfigPage .providerlens-col-title{width:46%;}",
+    "#ProviderLensConfigPage .providerlens-col-title{width:40%;}",
     "#ProviderLensConfigPage .providerlens-col-services{width:54%;}",
-    "#ProviderLensConfigPage .providerlens-table th,#ProviderLensConfigPage .providerlens-table td{padding:10px 12px;text-align:left;vertical-align:top;overflow-wrap:anywhere;}",
-    "#ProviderLensConfigPage .providerlens-table thead th{font-size:.82rem;letter-spacing:.02em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid rgba(255,255,255,.1);}",
+    "#ProviderLensConfigPage .providerlens-col-open{width:6%;min-width:56px;}",
+    "#ProviderLensConfigPage .providerlens-cell-open{text-align:right;white-space:nowrap;vertical-align:middle;}",
+    "#ProviderLensConfigPage .providerlens-table th,#ProviderLensConfigPage .providerlens-table td{padding:10px 12px;text-align:left;vertical-align:middle;overflow-wrap:anywhere;}",
+    "#ProviderLensConfigPage .providerlens-table thead th{vertical-align:middle;font-size:.82rem;letter-spacing:.02em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid rgba(255,255,255,.1);}",
     "#ProviderLensConfigPage .providerlens-table tbody tr:not(:last-child) td{border-bottom:1px solid rgba(255,255,255,.06);}",
     "#ProviderLensConfigPage .providerlens-title{font-weight:600;}",
     "#ProviderLensConfigPage .providerlens-chips{display:flex;flex-wrap:wrap;gap:6px;}",
     "#ProviderLensConfigPage .providerlens-chip{display:inline-block;padding:3px 8px;border-radius:999px;font-size:.8rem;line-height:1.3;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);white-space:nowrap;}",
+    "#ProviderLensConfigPage .providerlens-item-link{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;border-radius:50%;text-decoration:none;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);}",
+    "#ProviderLensConfigPage .providerlens-item-link:hover{background:rgba(255,255,255,.14);}",
   ].join("");
 
   document.head.appendChild(style);
 }
 
-(function () {
+export default function (view) {
   var ProviderLensConfig = {
     pluginUniqueId: "ba6a4ff6-a27f-46e7-94ab-effb7dc39158",
   };
@@ -34,6 +38,32 @@ function ensureDashboardStyles() {
   var tabs = page.querySelector('[is="emby-tabs"]');
 
   ensureDashboardStyles();
+
+  function refreshPage() {
+    Dashboard.showLoadingMsg();
+
+    return ApiClient.getPluginConfiguration(ProviderLensConfig.pluginUniqueId)
+      .then(function (config) {
+        page.querySelector("#TmdbApiKey").value = config.TmdbApiKey || "";
+        page.querySelector("#Country").value = (
+          config.Country || ""
+        ).toUpperCase();
+        setCheckedValues("providerOption", config.SelectedProviders || []);
+
+        var monitoredLibraryIds = config.MonitoredLibraryIds || [];
+        return loadLibraries(monitoredLibraryIds).then(function (libraries) {
+          return loadDashboard(monitoredLibraryIds, libraries);
+        });
+      })
+      .finally(function () {
+        selectTab(0, true);
+        Dashboard.hideLoadingMsg();
+      });
+  }
+
+  view.addEventListener("viewshow", function () {
+    refreshPage();
+  });
 
   function getCheckedValues(name) {
     return Array.from(
@@ -165,6 +195,13 @@ function ensureDashboardStyles() {
             return (a.Name || "").localeCompare(b.Name || "");
           })
           .map(function (match) {
+            var itemId = match.JellyfinItemId || "";
+            var detailsLink = itemId
+              ? '<button type="button" class="providerlens-item-link" data-item-id="' +
+                escapeHtml(itemId) +
+                '" title="Open Media Details" aria-label="Open Media Details">&#128279;</button>'
+              : "";
+
             var providerChips = (match.Providers || [])
               .map(function (provider) {
                 return provider.ProviderName || provider.ProviderId || "";
@@ -190,6 +227,9 @@ function ensureDashboardStyles() {
               '<td><div class="providerlens-chips">' +
               providerChips +
               "</div></td>" +
+              '<td class="providerlens-cell-open">' +
+              detailsLink +
+              "</td>" +
               "</tr>"
             );
           })
@@ -208,8 +248,8 @@ function ensureDashboardStyles() {
           "</div>" +
           '<div class="providerlens-table-wrap">' +
           '<table class="providerlens-table">' +
-          '<colgroup><col class="providerlens-col-title" /><col class="providerlens-col-services" /></colgroup>' +
-          "<thead><tr><th>Media Title</th><th>Streaming Services</th></tr></thead>" +
+          '<colgroup><col class="providerlens-col-title" /><col class="providerlens-col-services" /><col class="providerlens-col-open" /></colgroup>' +
+          "<thead><tr><th>Media Title</th><th>Streaming Services</th><th></th></tr></thead>" +
           "<tbody>" +
           rows +
           "</tbody>" +
@@ -301,6 +341,22 @@ function ensureDashboardStyles() {
     selectTab(parseTabIndex(button.getAttribute("data-index")), true);
   });
 
+  page.addEventListener("click", function (e) {
+    var button = e.target.closest(".providerlens-item-link");
+    if (!button) {
+      return;
+    }
+
+    e.preventDefault();
+
+    var itemId = button.getAttribute("data-item-id");
+    if (!itemId) {
+      return;
+    }
+
+    Dashboard.navigate("details?id=" + encodeURIComponent(itemId));
+  });
+
   tabs.addEventListener("tabchange", function (e) {
     var detail = e && e.detail ? e.detail : {};
     var index = Number.isInteger(detail.selectedIndex)
@@ -363,4 +419,4 @@ function ensureDashboardStyles() {
 
       return false;
     });
-})();
+}
