@@ -51,6 +51,14 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
                 CultureInfo.InvariantCulture,
                 "{0}.Configuration.configPage.html",
                 GetType().Namespace)
+        },
+        new PluginPageInfo
+        {
+            Name = "configPage.js",
+            EmbeddedResourcePath = string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}.Configuration.configPage.js",
+                GetType().Namespace)
         }
     ];
 }
