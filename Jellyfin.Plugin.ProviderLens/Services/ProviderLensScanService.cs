@@ -70,7 +70,7 @@ internal sealed class ProviderLensScanService : IProviderLensScanService
         var country = config.Country.Trim().ToUpperInvariant();
         var apiKey = config.TmdbApiKey.Trim();
 
-        var scanItems = new List<BaseItem>();
+        var scanItems = new List<(BaseItem Item, string LibraryId)>();
         foreach (var libraryIdText in config.MonitoredLibraryIds)
         {
             if (!Guid.TryParse(libraryIdText, out var libraryId))
@@ -85,7 +85,10 @@ internal sealed class ProviderLensScanService : IProviderLensScanService
                 IncludeItemTypes = [BaseItemKind.Movie, BaseItemKind.Series]
             };
 
-            scanItems.AddRange(_libraryManager.QueryItems(query).Items);
+            foreach (var item in _libraryManager.QueryItems(query).Items)
+            {
+                scanItems.Add((item, libraryIdText));
+            }
         }
 
         var totalItems = scanItems.Count;
@@ -119,9 +122,11 @@ internal sealed class ProviderLensScanService : IProviderLensScanService
 
         ReportProgress();
 
-        foreach (var item in scanItems)
+        foreach (var scanItem in scanItems)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            var item = scanItem.Item;
 
             try
             {
@@ -157,11 +162,12 @@ internal sealed class ProviderLensScanService : IProviderLensScanService
                 }
 
                 matches.Add(new ProviderLensMatch(
-                    item.Id.ToString("N", CultureInfo.InvariantCulture),
-                    item.Name,
-                    tmdbId,
-                    country,
-                    matchedProviders));
+                item.Id.ToString("N", CultureInfo.InvariantCulture),
+                item.Name,
+                tmdbId,
+                country,
+                matchedProviders,
+                scanItem.LibraryId));
             }
             finally
             {

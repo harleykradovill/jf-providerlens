@@ -40,6 +40,129 @@
       .replaceAll("'", "&#39;");
   }
 
+  function getLibraryId(item) {
+    return String(item.ItemId || item.Id || "");
+  }
+
+  function getLibraryNameMap(libraries) {
+    var map = new Map();
+    (libraries || []).forEach(function (library) {
+      map.set(getLibraryId(library), library.Name || getLibraryId(library));
+    });
+    return map;
+  }
+
+  function renderDashboard(snapshot, libraries, monitoredLibraryIds) {
+    var updatedAt = page.querySelector("#DashboardUpdatedAt");
+    var host = page.querySelector("#DashboardTables");
+
+    var matches = Array.isArray(snapshot && snapshot.Matches)
+      ? snapshot.Matches
+      : [];
+    var libraryNameMap = getLibraryNameMap(libraries);
+    var monitoredIds = Array.isArray(monitoredLibraryIds)
+      ? monitoredLibraryIds
+      : [];
+
+    var libraryIds = monitoredIds.length
+      ? monitoredIds
+      : Array.from(
+          new Set(
+            matches
+              .map(function (match) {
+                return match.LibraryId || "";
+              })
+              .filter(Boolean),
+          ),
+        );
+
+    var updatedUtc =
+      snapshot && snapshot.UpdatedUtc ? new Date(snapshot.UpdatedUtc) : null;
+    if (updatedUtc && !Number.isNaN(updatedUtc.getTime())) {
+      updatedAt.textContent = "Last updated: " + updatedUtc.toLocaleString();
+    } else {
+      updatedAt.textContent = "";
+    }
+
+    if (libraryIds.length === 0) {
+      host.innerHTML =
+        '<div class="fieldDescription">No monitored libraries are configured yet.</div>';
+      return;
+    }
+
+    host.innerHTML = libraryIds
+      .map(function (libraryId) {
+        var libraryMatches = matches.filter(function (match) {
+          return (match.LibraryId || "") === libraryId;
+        });
+
+        var libraryName =
+          libraryNameMap.get(libraryId) || libraryId || "Unknown Library";
+
+        if (libraryMatches.length === 0) {
+          return (
+            '<div class="verticalSection">' +
+            "<h3>" +
+            escapeHtml(libraryName) +
+            "</h3>" +
+            '<div class="fieldDescription">No matched titles found in this library.</div>' +
+            "</div>"
+          );
+        }
+
+        var rows = libraryMatches
+          .map(function (match) {
+            var providers = (match.Providers || [])
+              .map(function (provider) {
+                return provider.ProviderName || provider.ProviderId || "";
+              })
+              .filter(Boolean)
+              .join(", ");
+
+            return (
+              "<tr>" +
+              "<td>" +
+              escapeHtml(match.Name || "") +
+              "</td>" +
+              "<td>" +
+              escapeHtml(providers) +
+              "</td>" +
+              "</tr>"
+            );
+          })
+          .join("");
+
+        return (
+          '<div class="verticalSection">' +
+          "<h3>" +
+          escapeHtml(libraryName) +
+          "</h3>" +
+          '<table class="detailTable">' +
+          "<thead><tr><th>Media Title</th><th>Streaming Services</th></tr></thead>" +
+          "<tbody>" +
+          rows +
+          "</tbody>" +
+          "</table>" +
+          "</div>"
+        );
+      })
+      .join("");
+  }
+
+  function loadDashboard(monitoredLibraryIds, libraries) {
+    return ApiClient.getJSON(ApiClient.getUrl("ProviderLens/Dashboard"))
+      .then(function (snapshot) {
+        renderDashboard(snapshot, libraries, monitoredLibraryIds);
+      })
+      .catch(function () {
+        renderDashboard(
+          { Matches: [], UpdatedUtc: null },
+          libraries,
+          monitoredLibraryIds,
+        );
+      });
+  }
+
   function renderLibraries(items, selectedIds) {
     var host = page.querySelector("#LibrariesList");
     var selectedSet = new Set(selectedIds || []);
@@ -72,9 +195,11 @@
       .then(function (libraries) {
         var items = Array.isArray(libraries) ? libraries : [];
         renderLibraries(items, selectedLibraryIds);
+        return items;
       })
       .catch(function () {
         renderLibraries([], selectedLibraryIds);
+        return [];
       });
   }
 
@@ -125,7 +250,11 @@
           config.Country || ""
         ).toUpperCase();
         setCheckedValues("providerOption", config.SelectedProviders || []);
-        return loadLibraries(config.MonitoredLibraryIds || []);
+
+        var monitoredLibraryIds = config.MonitoredLibraryIds || [];
+        return loadLibraries(monitoredLibraryIds).then(function (libraries) {
+          return loadDashboard(monitoredLibraryIds, libraries);
+        });
       })
       .finally(function () {
         tabs.selectedIndex(0, false);

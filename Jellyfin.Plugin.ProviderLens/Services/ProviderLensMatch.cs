@@ -10,9 +10,11 @@ namespace Jellyfin.Plugin.ProviderLens.Services;
 /// <param name="TmdbId">TMDB item identifier.</param>
 /// <param name="Country">Country code used for provider filtering.</param>
 /// <param name="Providers">Matched providers.</param>
+/// <param name="LibraryId">Monitored library id that produced this match.</param>
 public sealed record ProviderLensMatch(
     string JellyfinItemId,
     string Name,
     string TmdbId,
     string Country,
-    IReadOnlyList<ProviderLensProviderMatch> Providers);
+    IReadOnlyList<ProviderLensProviderMatch> Providers,
+    string LibraryId);
