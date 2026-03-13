@@ -8,6 +8,6 @@ namespace Jellyfin.Plugin.ProviderLens.Services;
 /// </summary>
 /// <param name="UpdatedUtc">Snapshot update time in UTC.</param>
 /// <param name="Matches">Persisted matches.</param>
-internal sealed record ProviderLensDashboardSnapshot(
+public sealed record ProviderLensDashboardSnapshot(
     DateTimeOffset UpdatedUtc,
     IReadOnlyList<ProviderLensMatch> Matches);

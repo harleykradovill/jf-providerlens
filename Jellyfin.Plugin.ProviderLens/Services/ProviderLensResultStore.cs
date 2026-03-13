@@ -19,6 +19,10 @@ internal sealed class ProviderLensResultStore : IProviderLensResultStore
         WriteIndented = false
     };
 
+    private static readonly ProviderLensDashboardSnapshot EmptySnapshot = new(
+        DateTimeOffset.MinValue,
+        Array.Empty<ProviderLensMatch>());
+
     private readonly string _outputPath;
     private readonly ILogger<ProviderLensResultStore> _logger;
 
@@ -55,5 +59,31 @@ internal sealed class ProviderLensResultStore : IProviderLensResultStore
             "ProviderLens wrote {MatchCount} matches to {OutputPath}.",
             matches.Count,
             _outputPath);
+    }
+
+    /// <inheritdoc />
+    public async Task<ProviderLensDashboardSnapshot> GetSnapshotAsync(CancellationToken cancellationToken)
+    {
+        if (!File.Exists(_outputPath))
+        {
+            return EmptySnapshot;
+        }
+
+        try
+        {
+            var json = await File.ReadAllTextAsync(_outputPath, cancellationToken).ConfigureAwait(false);
+            var payload = JsonSerializer.Deserialize<ProviderLensDashboardSnapshot>(json, SerializerOptions);
+            return payload ?? EmptySnapshot;
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "ProviderLens dashboard data was invalid JSON at {OutputPath}.", _outputPath);
+            return EmptySnapshot;
+        }
+        catch (IOException ex)
+        {
+            _logger.LogWarning(ex, "ProviderLens dashboard data could not be read from {OutputPath}.", _outputPath);
+            return EmptySnapshot;
+        }
     }
 }
