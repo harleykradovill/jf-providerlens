@@ -125,16 +125,10 @@ internal sealed class ProviderLensScanService : IProviderLensScanService
         foreach (var scanItem in scanItems)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
             var item = scanItem.Item;
 
             try
             {
-                if (item is not Movie && item is not Series)
-                {
-                    continue;
-                }
-
                 var tmdbId = item.GetProviderId(MetadataProvider.Tmdb);
                 if (string.IsNullOrWhiteSpace(tmdbId))
                 {

@@ -30,7 +30,7 @@ public class ProviderLensSyncTask : IScheduledTask
     }
 
     /// <inheritdoc />
-    public string Name => "ProviderLens Sync";
+    public string Name => "Provider Lens Sync";
 
     /// <inheritdoc />
     public string Key => "ProviderLensSync";
@@ -39,7 +39,7 @@ public class ProviderLensSyncTask : IScheduledTask
     public string Description => "Fetches TMDB watch providers and stores country-filtered matches.";
 
     /// <inheritdoc />
-    public string Category => "ProviderLens";
+    public string Category => "Library";
 
     /// <inheritdoc />
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)

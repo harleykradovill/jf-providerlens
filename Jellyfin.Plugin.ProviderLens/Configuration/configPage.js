@@ -1,5 +1,9 @@
+/**
+ * Injects styles for the configuration page.
+ */
 function ensureDashboardStyles() {
   if (document.getElementById("ProviderLensDashboardStyles")) {
+    // Skip if styles already present
     return;
   }
 
@@ -39,32 +43,45 @@ export default function (view) {
 
   ensureDashboardStyles();
 
+  /**
+   * Reloads plugin config and matches data, then refreshes UI controls.
+   * @returns
+   */
   function refreshPage() {
     Dashboard.showLoadingMsg();
 
     return ApiClient.getPluginConfiguration(ProviderLensConfig.pluginUniqueId)
       .then(function (config) {
+        // Populate settings fields
         page.querySelector("#TmdbApiKey").value = config.TmdbApiKey || "";
         page.querySelector("#Country").value = (
           config.Country || ""
         ).toUpperCase();
         setCheckedValues("providerOption", config.SelectedProviders || []);
 
+        // Render libraries and Dashboard for selected library IDs
         var monitoredLibraryIds = config.MonitoredLibraryIds || [];
         return loadLibraries(monitoredLibraryIds).then(function (libraries) {
           return loadDashboard(monitoredLibraryIds, libraries);
         });
       })
       .finally(function () {
+        // Keep settings tab selected after refresh
         selectTab(0, true);
         Dashboard.hideLoadingMsg();
       });
   }
 
+  // Trigger refresh whenever this view becomes visible
   view.addEventListener("viewshow", function () {
     refreshPage();
   });
 
+  /**
+   * Returns checked checkbox values for given input name.
+   * @param {*} name Checkbox group name
+   * @returns Selected values
+   */
   function getCheckedValues(name) {
     return Array.from(
       page.querySelectorAll('input[name="' + name + '"]:checked'),
@@ -73,6 +90,11 @@ export default function (view) {
     });
   }
 
+  /**
+   * Applies checked state to all checkboxes in a named group.
+   * @param {*} name Checkbox group name
+   * @param {*} values Values that should be checked
+   */
   function setCheckedValues(name, values) {
     var set = new Set(values || []);
     page.querySelectorAll('input[name="' + name + '"]').forEach(function (x) {
@@ -80,6 +102,10 @@ export default function (view) {
     });
   }
 
+  /**
+   * Toggles active tab panel by data-index.
+   * @param {*} index Active panel index
+   */
   function setActiveTab(index) {
     page.querySelectorAll(".tabContent").forEach(function (panel) {
       if (parseInt(panel.getAttribute("data-index"), 10) === index) {
@@ -90,6 +116,11 @@ export default function (view) {
     });
   }
 
+  /**
+   * Escapes unsafe HTML characters before building string-based markup.
+   * @param {*} value Any value converted to string before escaping
+   * @returns Escaped string
+   */
   function escapeHtml(value) {
     return String(value)
       .replaceAll("&", "&amp;")
@@ -99,10 +130,20 @@ export default function (view) {
       .replaceAll("'", "&#39;");
   }
 
+  /**
+   * Reads a library ID from known ID fields.
+   * @param {*} item Library-like object
+   * @returns Normalized ID string
+   */
   function getLibraryId(item) {
     return String(item.ItemId || item.Id || "");
   }
 
+  /**
+   * Builds an ID to name lookup map for libraries.
+   * @param {*} libraries Library objects
+   * @returns Library ID to display name map
+   */
   function getLibraryNameMap(libraries) {
     var map = new Map();
     (libraries || []).forEach(function (library) {
@@ -111,6 +152,11 @@ export default function (view) {
     return map;
   }
 
+  /**
+   * Groups dashboard matches by library ID.
+   * @param {*} matches ProviderLens match rows
+   * @returns Grouped matches by library ID
+   */
   function groupMatchesByLibraryId(matches) {
     var map = new Map();
 
@@ -130,6 +176,13 @@ export default function (view) {
     return map;
   }
 
+  /**
+   * Renders dashboard content into table blocks, one per monitored library.
+   * @param {*} snapshot Dashboard snapshot response
+   * @param {*} libraries Library metadata for ID to name mapping
+   * @param {*} monitoredLibraryIds Libraries selected in settings
+   * @returns
+   */
   function renderDashboard(snapshot, libraries, monitoredLibraryIds) {
     var updatedAt = page.querySelector("#DashboardUpdatedAt");
     var host = page.querySelector("#DashboardTables");
@@ -143,6 +196,7 @@ export default function (view) {
       ? monitoredLibraryIds
       : [];
 
+    // Prefer configured monitored ids; otherwise derive from match rows
     var libraryIds = monitoredIds.length
       ? monitoredIds
       : Array.from(
@@ -155,6 +209,7 @@ export default function (view) {
           ),
         );
 
+    // Display snapshot timestamp when valid
     var updatedUtc =
       snapshot && snapshot.UpdatedUtc ? new Date(snapshot.UpdatedUtc) : null;
     if (updatedUtc && !Number.isNaN(updatedUtc.getTime())) {
@@ -165,6 +220,7 @@ export default function (view) {
       updatedAt.textContent = "";
     }
 
+    // No libraries selected means no sections to render
     if (libraryIds.length === 0) {
       host.innerHTML =
         '<div class="fieldDescription">No monitored libraries are configured yet.</div>';
@@ -178,6 +234,7 @@ export default function (view) {
         var libraryName =
           libraryNameMap.get(libraryId) || libraryId || "Unknown Library";
 
+        // Show empty-state block for selected library with no matches
         if (libraryMatches.length === 0) {
           return (
             '<div class="verticalSection">' +
@@ -202,6 +259,7 @@ export default function (view) {
                 '" title="Open Media Details" aria-label="Open Media Details">&#128279;</button>'
               : "";
 
+            // Build provider name chips sorted alphabetically
             var providerChips = (match.Providers || [])
               .map(function (provider) {
                 return provider.ProviderName || provider.ProviderId || "";
@@ -261,6 +319,12 @@ export default function (view) {
       .join("");
   }
 
+  /**
+   * Loads dashboard snapshot from plugin API and renders it.
+   * @param {*} monitoredLibraryIds Selected library IDs.
+   * @param {*} libraries Library metadata.
+   * @returns {Promise<void>}
+   */
   function loadDashboard(monitoredLibraryIds, libraries) {
     return ApiClient.getJSON(ApiClient.getUrl("ProviderLens/Dashboard"))
       .then(function (snapshot) {
@@ -275,6 +339,11 @@ export default function (view) {
       });
   }
 
+  /**
+   * Renders monitored-library checkbox list
+   * @param {*} items Library items from Jellyfin virtual folders endpoint
+   * @param {*} selectedIds Pre-selected IDs from configuration
+   */
   function renderLibraries(items, selectedIds) {
     var host = page.querySelector("#LibrariesList");
     var selectedSet = new Set(selectedIds || []);
@@ -297,11 +366,17 @@ export default function (view) {
       })
       .join("");
 
+    // Upgrade newly injected custom elements to checkbox behaviour applies
     if (window.CustomElements && window.CustomElements.upgradeSubtree) {
       window.CustomElements.upgradeSubtree(host);
     }
   }
 
+  /**
+   * Fetches libraries, renders checkbox list, returns normalized library array.
+   * @param {*} selectedLibraryIds Pre-selected IDs
+   * @returns {Promise<Object[]>}
+   */
   function loadLibraries(selectedLibraryIds) {
     return ApiClient.getJSON(ApiClient.getUrl("Library/VirtualFolders"))
       .then(function (libraries) {
@@ -315,11 +390,21 @@ export default function (view) {
       });
   }
 
+  /**
+   * Converts a tab index value to integer with safe fallback.
+   * @param {*} value Candidate index value
+   * @returns Parsed index, defaults to 0
+   */
   function parseTabIndex(value) {
     var index = parseInt(value, 10);
     return Number.isNaN(index) ? 0 : index;
   }
 
+  /**
+   * Selects tab content and optionally updates the tabs control state.
+   * @param {*} index Tab index
+   * @param {*} updateControl Whether to set selected tab in emby-tabs
+   */
   function selectTab(index, updateControl) {
     setActiveTab(index);
 
@@ -332,6 +417,7 @@ export default function (view) {
     }
   }
 
+  // Handle direct tab button clicks
   tabs.addEventListener("click", function (e) {
     var button = e.target.closest(".emby-tab-button");
     if (!button) {
@@ -341,6 +427,7 @@ export default function (view) {
     selectTab(parseTabIndex(button.getAttribute("data-index")), true);
   });
 
+  // Handle click on item-link icon to navigate to media details page
   page.addEventListener("click", function (e) {
     var button = e.target.closest(".providerlens-item-link");
     if (!button) {
@@ -357,6 +444,7 @@ export default function (view) {
     Dashboard.navigate("details?id=" + encodeURIComponent(itemId));
   });
 
+  // Handle tabchange events emitted by emby-tabs control
   tabs.addEventListener("tabchange", function (e) {
     var detail = e && e.detail ? e.detail : {};
     var index = Number.isInteger(detail.selectedIndex)
@@ -368,28 +456,14 @@ export default function (view) {
     selectTab(index, false);
   });
 
+  /**
+   * Legacy page show handler. Reload config and dashboard when page shows.
+   */
   page.addEventListener("pageshow", function () {
-    Dashboard.showLoadingMsg();
-
-    ApiClient.getPluginConfiguration(ProviderLensConfig.pluginUniqueId)
-      .then(function (config) {
-        page.querySelector("#TmdbApiKey").value = config.TmdbApiKey || "";
-        page.querySelector("#Country").value = (
-          config.Country || ""
-        ).toUpperCase();
-        setCheckedValues("providerOption", config.SelectedProviders || []);
-
-        var monitoredLibraryIds = config.MonitoredLibraryIds || [];
-        return loadLibraries(monitoredLibraryIds).then(function (libraries) {
-          return loadDashboard(monitoredLibraryIds, libraries);
-        });
-      })
-      .finally(function () {
-        selectTab(0, true);
-        Dashboard.hideLoadingMsg();
-      });
+    refreshPage();
   });
 
+  //Persist plugin settings when config form is submitted
   page
     .querySelector("#ProviderLensConfigForm")
     .addEventListener("submit", function (e) {
