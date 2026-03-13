@@ -81,6 +81,25 @@ function ensureDashboardStyles() {
     return map;
   }
 
+  function groupMatchesByLibraryId(matches) {
+    var map = new Map();
+
+    (matches || []).forEach(function (match) {
+      var libraryId = (match && match.LibraryId) || "";
+      if (!libraryId) {
+        return;
+      }
+
+      if (!map.has(libraryId)) {
+        map.set(libraryId, []);
+      }
+
+      map.get(libraryId).push(match);
+    });
+
+    return map;
+  }
+
   function renderDashboard(snapshot, libraries, monitoredLibraryIds) {
     var updatedAt = page.querySelector("#DashboardUpdatedAt");
     var host = page.querySelector("#DashboardTables");
@@ -88,6 +107,7 @@ function ensureDashboardStyles() {
     var matches = Array.isArray(snapshot && snapshot.Matches)
       ? snapshot.Matches
       : [];
+    var matchesByLibraryId = groupMatchesByLibraryId(matches);
     var libraryNameMap = getLibraryNameMap(libraries);
     var monitoredIds = Array.isArray(monitoredLibraryIds)
       ? monitoredLibraryIds
@@ -123,9 +143,7 @@ function ensureDashboardStyles() {
 
     host.innerHTML = libraryIds
       .map(function (libraryId) {
-        var libraryMatches = matches.filter(function (match) {
-          return (match.LibraryId || "") === libraryId;
-        });
+        var libraryMatches = matchesByLibraryId.get(libraryId) || [];
 
         var libraryName =
           libraryNameMap.get(libraryId) || libraryId || "Unknown Library";
@@ -311,8 +329,7 @@ function ensureDashboardStyles() {
         });
       })
       .finally(function () {
-        tabs.selectedIndex(0, false);
-        setActiveTab(0);
+        selectTab(0, true);
         Dashboard.hideLoadingMsg();
       });
   });

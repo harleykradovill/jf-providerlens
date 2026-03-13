@@ -42,7 +42,7 @@ internal sealed class ProviderLensResultStore : IProviderLensResultStore
             "ProviderLens");
 
         Directory.CreateDirectory(pluginDataDirectory);
-        _outputPath = Path.Combine(pluginDataDirectory, "dashboard-data.json");
+        _outputPath = Path.Combine(pluginDataDirectory, "providers-data.json");
     }
 
     /// <inheritdoc />

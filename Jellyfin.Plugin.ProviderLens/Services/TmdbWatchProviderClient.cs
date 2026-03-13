@@ -141,8 +141,7 @@ internal sealed class TmdbWatchProviderClient : ITmdbWatchProviderClient
 
         foreach (var bucket in countryPayload.ProviderBuckets)
         {
-            if (string.Equals(bucket.Key, "link", StringComparison.OrdinalIgnoreCase) ||
-                bucket.Value.ValueKind != JsonValueKind.Array)
+            if (bucket.Value.ValueKind != JsonValueKind.Array)
             {
                 continue;
             }
