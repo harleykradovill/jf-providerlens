@@ -29,6 +29,10 @@ Monitored Libraries:
 
 Here you pick which libraries that you would like Provider Lens to check.
 
+---
+
+Data in Provider Lens will be generated when the scheduled task runs.
+
 ## Installation
 
 Installation instructions are provided in my plugin repository.
