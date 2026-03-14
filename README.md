@@ -9,6 +9,10 @@ Utilizes the TMDB API, and identifies external streaming availability so adminis
 
 Provider Lens is made for Jellyfin server owners who only like to keep exclusive media that is not available on other streaming services that they subscribe to.
 
+<p align="center">
+  <img src="https://github.com/harleykradovill/jf-providerlens/blob/main/screenshots/1.png?raw=true" width="600px">
+</p>
+
 ## Configuration
 
 TMDB API Key:
