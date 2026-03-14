@@ -7,6 +7,8 @@
 See which movies and TV shows in your libraries are available on other streaming services.
 Utilizes the TMDB API, and identifies external streaming availability so administrators can easily decide what media is worth keeping locally.
 
+Provider Lens is made for Jellyfin server owners who only like to keep exclusive media that is not available on other streaming services that they subscribe to.
+
 ## Configuration
 
 TMDB API Key:
